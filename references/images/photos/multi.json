@@ -1,0 +1,32 @@
+[
+  {
+    "name": "soul_fusion_206_220",
+    "images": ["jpn-sakura-206-resize.jpg", "jpn-sakura-220-resize.jpg"],
+    "composite_prompt": "@ref0 @ref1 fused organic forms, continuem aesthetic, microorganism, dark background",
+    "motion_prompt": "slow organic pulse, drifting, breathing, bioluminescent glow"
+  },
+  {
+    "name": "soul_fusion_239_247",
+    "images": ["jpn-sakura-239-resize.jpg", "jpn-sakura-247-resize.jpg"],
+    "composite_prompt": "@ref0 @ref1 fused organic forms, continuem aesthetic, microorganism, dark background",
+    "motion_prompt": "gentle undulation, floating upward, subtle iridescent shimmer"
+  },
+  {
+    "name": "soul_fusion_206_239_261",
+    "images": ["jpn-sakura-206-resize.jpg", "jpn-sakura-239-resize.jpg", "jpn-sakura-261-resize.jpg"],
+    "composite_prompt": "@ref0 @ref1 @ref2 three souls merging, continuem aesthetic, ethereal, dark background",
+    "motion_prompt": "slow bloom, expanding and contracting, soft luminous pulse"
+  },
+  {
+    "name": "soul_fusion_all",
+    "images": [
+      "jpn-sakura-206-resize.jpg",
+      "jpn-sakura-220-resize.jpg",
+      "jpn-sakura-239-resize.jpg",
+      "jpn-sakura-247-resize.jpg",
+      "jpn-sakura-261-resize.jpg"
+    ],
+    "composite_prompt": "@ref0 @ref1 @ref2 @ref3 @ref4 all souls unified, continuem aesthetic, microorganism colony, dark background",
+    "motion_prompt": "slow organic pulse, collective breathing, bioluminescent drift"
+  }
+]

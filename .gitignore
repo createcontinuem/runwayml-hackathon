@@ -1,0 +1,31 @@
+# Markdown docs
+*.md
+
+# Environment & secrets
+.env
+*.env
+.env.*
+
+# Generated output
+output/
+input/
+
+# Generated videos
+references/images/photos/*.mp4
+references/images/photos/*.mov
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+references/images/photos/jpn-sakura-220-resize.jpg
+references/images/photos/jpn-sakura-239-resize.jpg
+references/images/photos/jpn-sakura-247-resize.jpg
+references/images/photos/KEF04751.jpg
+references/images/photos/sakura-mosh-test-16.jpg
+references/images/photos/archive/jpn-sakura-261-resize.jpg
+references/images/photos/archive/jpn-sakura-206-resize.jpg
+references/images/photos/solo-show-test-18.jpg
+references/images/photos/solo-show-test-4.jpg
