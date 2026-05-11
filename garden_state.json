@@ -1,0 +1,66 @@
+{
+  "experiment": "gen03_garden",
+  "organism_count": 4,
+  "organisms": [
+    {
+      "id": "soul_fusion_239_247_gen03_gen01",
+      "species": "soul_fusion_239_247_gen03",
+      "generation": 1,
+      "video": "output/experiments/gen03_garden/growth/soul_fusion_239_247_gen03_gen01.mp4",
+      "type": "growth",
+      "position": {
+        "x": -3.3326878418505395,
+        "y": -0.47498924477733306,
+        "z": -3.769964817957057
+      },
+      "float_speed": 0.41160536907441136,
+      "float_amplitude": 0.24729424283280246,
+      "phase_offset": 4.251828276751594
+    },
+    {
+      "id": "soul_fusion_239_247_gen03_gen02",
+      "species": "soul_fusion_239_247_gen03",
+      "generation": 2,
+      "video": "output/experiments/gen03_garden/growth/soul_fusion_239_247_gen03_gen02.mp4",
+      "type": "growth",
+      "position": {
+        "x": 0.4706154812458144,
+        "y": -0.41306116737058385,
+        "z": -3.5936938163776757
+      },
+      "float_speed": 0.31489860971903516,
+      "float_amplitude": 0.14372759496072068,
+      "phase_offset": 3.1752409211165533
+    },
+    {
+      "id": "soul_fusion_239_247_gen03_gen03",
+      "species": "soul_fusion_239_247_gen03",
+      "generation": 3,
+      "video": "output/experiments/gen03_garden/growth/soul_fusion_239_247_gen03_gen03.mp4",
+      "type": "growth",
+      "position": {
+        "x": -4.068156836379364,
+        "y": -0.3011623493133515,
+        "z": 0.17986132533542787
+      },
+      "float_speed": 0.5724707403016083,
+      "float_amplitude": 0.14408812440813934,
+      "phase_offset": 3.7024654869542406
+    },
+    {
+      "id": "soul_fusion_239_247_gen03_gen04",
+      "species": "soul_fusion_239_247_gen03",
+      "generation": 4,
+      "video": "output/experiments/gen03_garden/growth/soul_fusion_239_247_gen03_gen04.mp4",
+      "type": "growth",
+      "position": {
+        "x": 0.371316548013392,
+        "y": -0.493501240321939,
+        "z": 0.36698310219936947
+      },
+      "float_speed": 0.6490696974941135,
+      "float_amplitude": 0.16805010330359837,
+      "phase_offset": 0.9769065087850171
+    }
+  ]
+}

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>continuem — digital garden</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+    canvas { display: block; }
+    #hud {
+      position: fixed; bottom: 20px; left: 20px;
+      color: rgba(120, 255, 180, 0.4);
+      font: 11px monospace; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud"></div>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    scene.fog = new THREE.FogExp2(0x000500, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 4, 14);
+    camera.lookAt(0, 0, 0);
+
+    const textureLoader = new THREE.TextureLoader();
+    const state = await fetch('/garden_state.json').then(r => r.json());
+    const organisms = [];
+
+    for (const org of state.organisms) {
+      const group = new THREE.Group();
+      group.position.set(org.position.x, org.position.y, org.position.z);
+
+      // Video element
+      const video = document.createElement('video');
+      video.src = org.video;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.crossOrigin = 'anonymous';
+
+      await new Promise(resolve => {
+        video.addEventListener('canplay', resolve, { once: true });
+        video.load();
+      });
+      video.play().catch(() => {});
+
+      const videoTex = new THREE.VideoTexture(video);
+      videoTex.minFilter = THREE.LinearFilter;
+      videoTex.magFilter = THREE.LinearFilter;
+
+      const geo = new THREE.PlaneGeometry(2.56, 1.44);
+
+      // If mask exists — cutout subject sprite
+      if (org.mask) {
+        const maskTex = await new Promise(resolve =>
+          textureLoader.load('/' + org.mask, resolve)
+        );
+
+        // Subject layer — video masked to subject shape
+        const subjectMat = new THREE.MeshBasicMaterial({
+          map: videoTex,
+          alphaMap: maskTex,
+          transparent: true,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        });
+        const subjectMesh = new THREE.Mesh(geo, subjectMat);
+        group.add(subjectMesh);
+
+        // Glow layer — soft halo behind the subject
+        const glowMat = new THREE.MeshBasicMaterial({
+          map: maskTex,
+          color: org.type === 'growth' ? 0x00ff88 : 0x0088ff,
+          transparent: true,
+          opacity: 0.12,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+        });
+        const glowMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(2.9, 1.65),
+          glowMat
+        );
+        glowMesh.position.z = -0.05;
+        group.add(glowMesh);
+
+      } else {
+        // Fallback — plain video plane, dimmed
+        const mat = new THREE.MeshBasicMaterial({
+          map: videoTex,
+          transparent: true,
+          opacity: 0.6,
+          side: THREE.DoubleSide,
+        });
+        group.add(new THREE.Mesh(geo, mat));
+      }
+
+      // Billboard: always face camera
+      group.userData = {
+        org,
+        floatSpeed: org.float_speed,
+        floatAmp: org.float_amplitude,
+        phaseOffset: org.phase_offset,
+        baseY: org.position.y,
+      };
+
+      scene.add(group);
+      organisms.push(group);
+    }
+
+    // Ambient spore particles
+    const particleCount = 500;
+    const pos = new Float32Array(particleCount * 3);
+    const pVelocity = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      pos[i * 3]     = (Math.random() - 0.5) * 35;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 12;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 35;
+      pVelocity[i * 3]     = (Math.random() - 0.5) * 0.002;
+      pVelocity[i * 3 + 1] = (Math.random() - 0.5) * 0.001;
+      pVelocity[i * 3 + 2] = (Math.random() - 0.5) * 0.002;
+    }
+    const pGeo = new THREE.BufferGeometry();
+    const pAttr = new THREE.BufferAttribute(pos, 3);
+    pAttr.setUsage(THREE.DynamicDrawUsage);
+    pGeo.setAttribute('position', pAttr);
+    const pMat = new THREE.PointsMaterial({
+      color: 0x44ffaa, size: 0.05, transparent: true, opacity: 0.35,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    document.getElementById('hud').textContent =
+      `${state.organism_count} organisms — continuem digital garden`;
+
+    // Camera orbit
+    let camAngle = 0;
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      // Float organisms + billboard
+      for (const group of organisms) {
+        const { floatSpeed, floatAmp, phaseOffset, baseY } = group.userData;
+        group.position.y = baseY + Math.sin(t * floatSpeed + phaseOffset) * floatAmp;
+        group.rotation.y = Math.atan2(
+          camera.position.x - group.position.x,
+          camera.position.z - group.position.z
+        );
+      }
+
+      // Drift particles
+      const positions = pGeo.attributes.position.array;
+      for (let i = 0; i < particleCount; i++) {
+        positions[i * 3]     += pVelocity[i * 3];
+        positions[i * 3 + 1] += pVelocity[i * 3 + 1];
+        positions[i * 3 + 2] += pVelocity[i * 3 + 2];
+        // Wrap bounds
+        if (Math.abs(positions[i * 3]) > 17.5)     pVelocity[i * 3]     *= -1;
+        if (Math.abs(positions[i * 3 + 1]) > 6)    pVelocity[i * 3 + 1] *= -1;
+        if (Math.abs(positions[i * 3 + 2]) > 17.5) pVelocity[i * 3 + 2] *= -1;
+      }
+      pGeo.attributes.position.needsUpdate = true;
+
+      // Slow orbit
+      camAngle += 0.0002;
+      camera.position.x = Math.sin(camAngle) * 14;
+      camera.position.z = Math.cos(camAngle) * 14;
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>continuem — infinite zoom</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+    canvas { display: block; }
+    #hud {
+      position: fixed; bottom: 20px; left: 20px;
+      color: rgba(120, 255, 180, 0.35);
+      font: 11px monospace; pointer-events: none;
+    }
+    #name {
+      position: fixed; top: 28px; left: 50%; transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.45);
+      font: 12px monospace; letter-spacing: 0.18em;
+      text-transform: uppercase; pointer-events: none;
+      transition: opacity 0.4s;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud"></div>
+  <div id="name"></div>
+  <canvas id="c"></canvas>
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx    = canvas.getContext('2d');
+    const hud    = document.getElementById('hud');
+    const nameEl = document.getElementById('name');
+
+    // ── Photos ──────────────────────────────────────────────────────────────
+    const PHOTOS = [
+      { src: '/references/images/photos/KEF04751.jpg',              label: 'KEF04751'       },
+      { src: '/references/images/photos/sakura-mosh-test-16.jpg',   label: 'sakura mosh 16' },
+      { src: '/references/images/photos/solo-show-test-4.jpg',      label: 'solo show 4'    },
+      { src: '/references/images/photos/solo-show-test-18.jpg',     label: 'solo show 18'   },
+      { src: '/references/images/photos/jpn-sakura-239-resize.jpg', label: 'jpn sakura 239' },
+      { src: '/references/images/photos/jpn-sakura-247-resize.jpg', label: 'jpn sakura 247' },
+      { src: '/references/images/photos/jpn-sakura-220-resize.jpg', label: 'jpn sakura 220' },
+      { src: '/references/images/photos/cambodia-ruins.jpg',        label: 'cambodia ruins' },
+    ];
+    const N = PHOTOS.length;
+    const R = 5; // zoom multiplier between consecutive layers
+
+    const imgs = PHOTOS.map(({ src }) => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    });
+
+    // ── Canvas resize ────────────────────────────────────────────────────────
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function smoothstep(x, lo, hi) {
+      const t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
+      return t * t * (3 - 2 * t);
+    }
+
+    // Draw image centred and cover-scaled, multiplied by `scale`, at `alpha`.
+    function drawCover(img, scale, alpha) {
+      if (!img.complete || img.naturalWidth === 0 || alpha < 0.004) return;
+      const W = canvas.width, H = canvas.height;
+      const s = Math.max(W / img.naturalWidth, H / img.naturalHeight) * scale;
+      const w = img.naturalWidth  * s;
+      const h = img.naturalHeight * s;
+      ctx.globalAlpha = Math.min(1, alpha);
+      ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    // t is the continuous zoom step. t=0 → photo[0] fills screen, t=1 → photo[1], etc.
+    let t       = 0;
+    let vel     = 0;       // scroll impulse, steps/frame
+    let paused  = false;
+    const AUTO  = 0.0045;  // auto-advance speed, steps/frame (~27 s/cycle at 60 fps)
+
+    // ── Render ───────────────────────────────────────────────────────────────
+    function draw() {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+
+      const step = Math.floor(t);
+      const f    = t - step;                         // 0 → 1 within current transition
+
+      const curIdx  = ((step % N) + N) % N;
+      const nextIdx = (curIdx + 1) % N;
+
+      // Current photo zooms larger (scale 1→R) as you move toward the next layer.
+      const curScale  = Math.pow(R, f);
+      // Next photo grows into view from centre (scale 1/R→1).
+      const nextScale = Math.pow(R, f - 1);
+
+      // Cross-dissolve: current fades out, next fades in.
+      const curAlpha  = 1 - smoothstep(f, 0.30, 0.80);
+      const nextAlpha =     smoothstep(f, 0.20, 0.70);
+
+      // Paint back → front so the incoming photo sits behind the outgoing one.
+      drawCover(imgs[nextIdx], nextScale, nextAlpha);
+      drawCover(imgs[curIdx],  curScale,  curAlpha);
+
+      ctx.globalAlpha = 1;
+
+      // ── HUD ────────────────────────────────────────────────────────────────
+      const dominant = curAlpha >= nextAlpha ? curIdx : nextIdx;
+      nameEl.textContent = PHOTOS[dominant].label;
+      nameEl.style.opacity = Math.max(curAlpha, nextAlpha);
+
+      hud.textContent =
+        `${curIdx + 1} → ${nextIdx + 1} / ${N}  ` +
+        `×${curScale.toFixed(2)}  ` +
+        `${paused ? '[paused]  ' : ''}` +
+        `scroll · click · ← →`;
+    }
+
+    // ── Loop ─────────────────────────────────────────────────────────────────
+    function animate() {
+      requestAnimationFrame(animate);
+      t += (paused ? 0 : AUTO) + vel;
+      t  = Math.max(0, t);
+      vel *= 0.88;
+      draw();
+    }
+    animate();
+
+    // ── Input ────────────────────────────────────────────────────────────────
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      vel += e.deltaY * 0.0009;
+    }, { passive: false });
+
+    canvas.addEventListener('click', () => { paused = !paused; });
+
+    window.addEventListener('keydown', e => {
+      if (e.key === ' ')          { paused = !paused; e.preventDefault(); }
+      if (e.key === 'ArrowRight') { vel += 0.25; }
+      if (e.key === 'ArrowLeft')  { vel -= 0.25; }
+    });
+
+    // Touch: swipe up/down to zoom
+    let touchY0 = null;
+    canvas.addEventListener('touchstart', e => { touchY0 = e.touches[0].clientY; });
+    canvas.addEventListener('touchmove',  e => {
+      if (touchY0 === null) return;
+      vel += (touchY0 - e.touches[0].clientY) * 0.0012;
+      touchY0 = e.touches[0].clientY;
+    });
+    canvas.addEventListener('touchend', () => { touchY0 = null; });
+  </script>
+</body>
+</html>
